@@ -24,7 +24,8 @@ use Illuminate\Support\Facades\DB;
 class homeController extends Controller
 {
     public function getDataChecklist($year){
-        $get_data=Ampuh_indikator::leftJoin('ampuh_sub_indikator_lvl1 as lvl1', function($join){
+        $get_data=Ampuh_indikator::join('indikator_user as iu', 'iu.id_indikator', '=', 'ampuh_indikator.id')
+                            ->leftJoin('ampuh_sub_indikator_lvl1 as lvl1', function($join){
                                             $join->on('lvl1.indikator_id', '=', 'ampuh_indikator.id')
                                                 ->where(function($w){
                                                     $w->whereRaw('lvl1.rule_id is null')
@@ -68,6 +69,7 @@ class homeController extends Controller
                         ) as id_indikator')
                             )
                             ->whereRaw("ampuh_indikator.indikator_name not like '%00%'")
+                            ->where('iu.tahun', $year)
                             ->orderBy('ampuh_indikator.indikator_name', 'asc')
                             ->orderBy('lvl1', 'asc')
                             ->orderBy('lvl2', 'asc')
