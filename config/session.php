@@ -211,4 +211,7 @@ return [
 
     'partitioned' => false,
 
+
+    'accepted_sub'=> env('ACCEPTED_SUB_DOMAIN')
+
 ];
