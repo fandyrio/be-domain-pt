@@ -21,7 +21,7 @@ Route::get('test-folder', 'googleDriveController@createFolderTesting');
 Route::get('google-drive/list', 'googleDriveController@listFiles')->name('drive-files')->middleware('auth:api');
 Route::post('google-drive/upload', 'googleDriveController@uploadFile')->name('google-drive-upload')->middleware('auth:api');
 //Mengambil folder berdasarkan folder id dan level
-Route::get('google-drive/list-folder/{folder_id}/{level}', 'googleDriveController@  ')->name('list-folder')->middleware('auth:api');
+Route::get('google-drive/list-folder/{folder_id}/{level}', 'googleDriveController@listFolder')->name('list-folder')->middleware('auth:api');
 Route::post('google-drive/create-new-folder', 'googleDriveController@createNewFolder')->name('create-folder')->middleware('auth:api');
 Route::post('google-drive/update-folder', 'googleDriveController@updateFolderByGdId')->name('update-folder')->middleware(['auth:api', 'isAdmin']);
 Route::get("get-list-gdid", 'api\googleDriveIdController@getListGDID')->name("get-list-gdid")->middleware(['auth:api', 'isAdmin']);
