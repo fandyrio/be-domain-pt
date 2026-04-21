@@ -68,7 +68,7 @@ class homeController extends Controller
                                     ELSE null END
                         ) as id_indikator')
                             )
-                            ->whereRaw("ampuh_indikator.indikator_name not like '%00%'")
+                            ->whereRaw("ampuh_indikator.indikator_name not like '%00.%'")
                             ->where('iu.tahun', $year)
                             ->orderBy('ampuh_indikator.indikator_name', 'asc')
                             ->orderBy('lvl1', 'asc')

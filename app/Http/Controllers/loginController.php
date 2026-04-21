@@ -31,7 +31,8 @@ class loginController extends Controller
                 if($hash){
                     $user=User::where('citizen_id', $get_user['citizen_id'])->first();
                     $token=JWTAuth::fromUser($user);
-                    $refreshToken=JWTAuth::claims(['type' => 'refresh'])->fromUser($user);//pitu ari
+                    $refreshToken=JWTAuth::claims(['type' => 'refresh'])
+                                    ->fromUser($user);//pitu ari
                     $same_site=config('session.same_site');
                     $isSecure=config('session.secure');
                     $sub=config('session.accepted_sub');
