@@ -30,7 +30,10 @@ class masterEdocController extends Controller
             $jumlah=$get_data_tree['total'];
             $tree=$get_data_tree['data_tree'];
             $isPj=$get_data_tree['isPj'];
-
+            $isAdmin = $get_data_tree['isAdmin'];
+            if($isAdmin){
+                $isPj = true;
+            }
         }else{
             $msg=$get_data_tree['msg'];
         }

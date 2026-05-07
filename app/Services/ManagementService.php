@@ -26,6 +26,7 @@
             $get_data=[];
             $data_tree=[];
             $isPjBagian=false;
+            $isAdmin = false;
             $current_year=$year === null ? date('Y') : $year;
             try{
                 $id_bagian=Crypt::decrypt($id_bagian_enc);
@@ -134,6 +135,7 @@
                 $jumlah=$get_data->count();
                 $data_tree=$this->treeData($get_data, $id_bagian);
                 $isPjBagian=$this->userServices->isPjBagian($citizen_id, $id_bagian);
+                $isAdmin=$this->userServices->isAdmin($citizen_id);
                 $status=true;
             }catch(DecryptException $e){
                 $msg="Invalid token";
@@ -145,6 +147,7 @@
                 'msg'=>$msg,
                 'status'=>$status,
                 'isPj'=>$isPjBagian,
+                'isAdmin'=>$isAdmin
             ];
         }
         public function treeData($data, $id_bagian){
