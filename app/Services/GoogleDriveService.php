@@ -89,7 +89,6 @@
         }
 
 
-
         public function getFolderProperti($gd_id){
             try{
                 $this->client->setScopes([Drive::DRIVE_READONLY]);
@@ -103,7 +102,7 @@
                     'name'=>$folder->getName(),
                 ];
             }catch(\Exception $e){
-                return ['status'=>false, 'msg'=>'Folder not Found'];
+                return ['status'=>false, 'msg'=>'Folder not Found. '.$e->getMessage()];
             }
         }
 

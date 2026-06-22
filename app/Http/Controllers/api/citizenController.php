@@ -58,7 +58,7 @@ class citizenController extends Controller
             $err = curl_error($curl);  //if you need
             curl_close($curl);
             if(isset($decode->message)){
-                return response()->json([ 'status'=>false, 'msg'=>'Error API Cuti' ]);
+                return response()->json([ 'status'=>false, 'msg'=>'Error API Cuti '.$path_citizen." ".$decode->message ]);
             }else{
                 $data=$decode->data;
                 $jumlah=$decode->jumlah;

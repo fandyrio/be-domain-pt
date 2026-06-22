@@ -23,7 +23,7 @@ class bagianController extends Controller
     }
 
     public function syncBagian(){
-        $end_point_cuti=config('costum.api_cuti');
+        $end_point_cuti=config('costum.api_cuti_prod');
         $path=$end_point_cuti."/get-all-bagian-nf";
         $response=Http::withToken('Bearer di1Z5eP9N6yNfPYhjU9Op8Dg0JlrJ81jelQYiDErfdBWOe0FcQa8l86E2dFA')->get($path);
         $data=$response->json();
@@ -135,6 +135,7 @@ class bagianController extends Controller
         $x=0;
         foreach($get_data as $data_bagian){
             $data[$x]['bagian']=$data_bagian['bagian'];
+            $data[$x]['alias']=$data_bagian['alias'];
             $data[$x]['active']=(int)$data_bagian['active'];
             $data[$x]['id']=Crypt::encrypt($data_bagian['id']);
             $data[$x]['bagian_code']=Crypt::encrypt($data_bagian['bagian_code']);
@@ -180,7 +181,7 @@ class bagianController extends Controller
                 if(is_null($bagian)){
                     $msg="Data bagian tidak ditemukan";
                 }else{
-                    $bagian->bagian=$request->new_bagian_name;
+                    $bagian->alias=$request->new_bagian_name;
                     $update=$bagian->update();
                     if($update){
                         $msg="Berhasil memperbaharui data";

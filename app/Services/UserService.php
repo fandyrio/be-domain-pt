@@ -13,7 +13,7 @@
         public function isAdmin($citizen_id){
             $getCitizen=Citizen::join('bagian', function($join){
                                     $join->on('bagian.id', '=', 'citizen.id_bagian')
-                                    ->where('bagian.bagian_code', 'bag-024');
+                                    ->where('bagian.bagian_code', 'bag-031');
                                 })
                         ->where('citizen.id', $citizen_id)
                         ->first();

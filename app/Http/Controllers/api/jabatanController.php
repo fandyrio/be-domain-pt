@@ -12,7 +12,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 class jabatanController extends Controller
 {
     public function syncJabatan(){
-        $api_path=config('costum.api_cuti');
+        $api_path=config('costum.api_cuti_prod');
         $path=$api_path."/sync-jabatan";
         $response=HTTP::withToken('Bearer di1Z5eP9N6yNfPYhjU9Op8Dg0JlrJ81jelQYiDErfdBWOe0FcQa8l86E2dFA')->get($path);
         $data=$response->json();
