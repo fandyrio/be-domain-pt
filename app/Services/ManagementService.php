@@ -126,7 +126,7 @@
                                 ->where('indikator_user.tahun', $current_year)
                                 ->select('a.indikator_name as parent', 'b.sub_indikator_name as lvl1', 'd.sub_indikator_name as lvl2', 'f.sub_indikator_name as lvl3', 'h.sub_indikator_name as lvl4', 'j.sub_indikator_name as lvl5', 'indikator_user.id_indikator as id_parent', 'c.id as id_indikator_user_lvl1', 'c.id_indikator_lvl1 as id_lvl1', 'e.id as id_indikator_user_lvl2', 'e.id_indikator_lvl2 as id_lvl2', 'g.id as id_indikator_user_lvl3', 'g.id_indikator_lvl3 as id_lvl3', 'i.id as id_indikator_user_lvl4', 'i.id_indikator_lvl4 as id_lvl4', 'k.id as id_indikator_user_lvl5', 'k.id_indikator_lvl5 as id_lvl5', 'c.is_folder_bagian as folder_bagian_lvl1', 'e.is_folder_bagian as folder_bagian_lvl2', 'g.is_folder_bagian as folder_bagian_lvl3', 'i.is_folder_bagian as folder_bagian_lvl4', 'k.is_folder_bagian as folder_bagian_lvl5')
                                 // ->orderBy('a.indikator_name', 'asc')
-                                ->orderBy("CAST(SUBSTRING_INDEX(a.indikator_name, '.', 1) as unsigned) ASC")
+                                ->orderByRaw("CAST(SUBSTRING_INDEX(a.indikator_name, '.', 1) as unsigned) ASC")
                                 ->orderBy('b.sub_indikator_name', 'asc')
                                 ->orderBy('d.sub_indikator_name', 'asc')
                                 ->orderBy('f.sub_indikator_name', 'asc')
