@@ -689,7 +689,7 @@ class checklistBagianController extends Controller
             }
         }
         $must_delete=count($lvl1)+count($lvl2)+count($lvl3)+count($lvl4)+count($lvl5)+count($parent);
-        if($must_delete === $deleted){
+        if($must_delete === $deleted && $deleted > 0){
             return true;
         }
         return false;
