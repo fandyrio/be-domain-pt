@@ -31,12 +31,12 @@ class loginController extends Controller
                 if($hash){
                     $user=User::where('citizen_id', $get_user['citizen_id'])->first();
                     $token=JWTAuth::fromUser($user);
-                    $refreshToken=JWTAuth::claims(['type' => 'refresh'])
+                    $refreshToken=JWTAuth::customClaims(['type' => 'refresh', 'exp'=>now()->addDays(7)->timestamp])
                                     ->fromUser($user);//pitu ari
                     $same_site=config('session.same_site');
                     $isSecure=config('session.secure');
                     $sub=config('session.accepted_sub');
-                    return response()->json(['message'=>'Login berhasil', 'token'=>$token, 'status'=>200])->withCookie(cookie('network', $refreshToken, 60*24*7, '/', $sub, $isSecure, true, false, $same_site));
+                    return response()->json(['message'=>'Login berhasil', 'token'=>$token, 'status'=>200])->withCookie(cookie('network', $refreshToken, 60*24*7, '/', null, true, true, false, 'None'));
                 }else{
                     return response()->json(['message'=>'Password salah', 'status'=>401]);
                 }
