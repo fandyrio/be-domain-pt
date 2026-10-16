@@ -108,3 +108,6 @@ Route::get('get-msg-sent/{month}/{year}', 'api\monitoringController@getMsgSent')
 
 //send-msg
 Route::post('send-msg-tunggakan', 'api\monitoringController@sendMsgTunggakan')->middleware('auth:api');
+
+//adding daata dashboard
+Route::get('data-dashboard/{tahun}', 'api\dashboardController@getDataChecklistTahunan')->middleware(['auth:api']);

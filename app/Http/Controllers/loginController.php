@@ -31,12 +31,11 @@ class loginController extends Controller
                 if($hash){
                     $user=User::where('citizen_id', $get_user['citizen_id'])->first();
                     $token=JWTAuth::fromUser($user);
-                    $refreshToken=JWTAuth::customClaims(['type' => 'refresh', 'exp'=>now()->addDays(7)->timestamp])
-                                    ->fromUser($user);//pitu ari
+                    $refreshToken=JWTAuth::customClaims(['type' => 'refresh', 'exp'=>now()->addDays(7)->timestamp])->fromUser($user);//pitu ari
                     $same_site=config('session.same_site');
                     $isSecure=config('session.secure');
                     $sub=config('session.accepted_sub');
-                    return response()->json(['message'=>'Login berhasil', 'token'=>$token, 'status'=>200])->withCookie(cookie('network', $refreshToken, 60*24*7, '/', null, true, true, false, 'None'));
+                    return response()->json(['message'=>'Login berhasil', 'token'=>$token, 'status'=>200])->withCookie(cookie('network', $refreshToken, 60*24*7, $sub, null, true, true, false, 'None'));
                 }else{
                     return response()->json(['message'=>'Password salah', 'status'=>401]);
                 }
@@ -59,11 +58,11 @@ class loginController extends Controller
             $newAccessToken=JWTAuth::fromUser($user);
 
             return response()->json(['token'=>$newAccessToken], 200);
-        }catch(\Exception){
+        }catch(\Exception $e){
             $same_site=config('session.same_site');
             $isSecure=config('session.secure');
             $sub=config('session.accepted_sub');
-            return response()->json(['message'=>'Invalid or expired token'], 401)->withCookie(cookie('network', null, -1, '/', $sub, $isSecure, true, false, $same_site));
+            return response()->json(['message'=>'Invalid or expired token '.$e->getMessage()], 401)->withCookie(cookie('network', null, -1, '/', null, false, true, false, 'None'));
         }
     }
 
