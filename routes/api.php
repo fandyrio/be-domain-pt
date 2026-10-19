@@ -111,3 +111,5 @@ Route::post('send-msg-tunggakan', 'api\monitoringController@sendMsgTunggakan')->
 
 //adding daata dashboard
 Route::get('data-dashboard/{tahun}', 'api\dashboardController@getDataChecklistTahunan')->middleware(['auth:api']);
+Route::get('list-edoc-kosong/{id_bagian}/{tahun}', 'api\dashboardController@getListEdocBelumDiisi')->middleware(['auth:api']);
+Route::get("list-edoc-belum-periode/{id_bagian}/{tahun}", "api\dashboardController@getListEdocBelumPeriode")->middleware(['auth:api']);
