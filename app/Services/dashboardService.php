@@ -94,7 +94,11 @@ use Illuminate\Support\Facades\Crypt;
 
         public function getListEdocBelumDiisi($id_bagian, $tahun){
             //select file_name, timeline from master_file_indikator a left join edoc_indikator b on b.id_master=a.id where id_bagian = 33 and edoc is null and max_fill_at <= date(now());
-            $get_data = Master_file_indikator::leftJoin("edoc_indikator as b", "b.id_master", "=", "master_file_indikator.id")
+            $get_data = Master_file_indikator::join("indikator_lvl2_user as c", function($join){
+                                                $join->on("master_file_indikator.id_bagian", "=", "c.id_bagian")
+                                                    ->whereRaw("master_file_indikator.file_code = CONCAT('B-', c.id)");
+                                            })
+                                    ->leftJoin("edoc_indikator as b", "b.id_master", "=", "master_file_indikator.id")
                                     ->where('id_bagian', $id_bagian)
                                     ->whereRaw('max_fill_at <= date(now())')
                                     ->whereRaw('year(max_fill_at) = '.$tahun)
