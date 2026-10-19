@@ -103,17 +103,19 @@ use Illuminate\Support\Facades\Crypt;
                                                     ->whereRaw("master_file_indikator.file_code = CONCAT('B-', c.id)");
                                             })
                                     ->leftJoin("edoc_indikator as b", "b.id_master", "=", "master_file_indikator.id")
+                                    ->join("ampuh_sub_indikator_lvl2 as d", "d.id", "=", "c.id_indikator_lvl2")
+                                    ->join("ampuh_sub_indikator_lvl1 as e", "e.id", "=", "d.sub_indikator_lvl1_id")
                                     ->where('master_file_indikator.id_bagian', $id_bagian)
                                     ->whereRaw('max_fill_at <= date(now())')
                                     ->whereRaw('year(max_fill_at) = '.$tahun)
                                     ->whereRaw('edoc is null')
-                                    ->select("file_name as name", "timeline")
+                                    ->select("file_name as name", "d.sub_indikator_name as name_lvl2", "e.sub_indikator_name as name_lvl1", "timeline")
                                     ->get();
             $data = [];
             $jumlah = $get_data->count();
             foreach($get_data as $list){
                 $data[] = [
-                    'filename'=>$list['name'],
+                    'filename'=>$list['name_lvl1']." - ".$list['name_lvl2']." - ".$list['name'],
                     'timeline'=>$list['timeline']
                 ];
             }

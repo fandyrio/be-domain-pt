@@ -942,7 +942,7 @@ class checklistBagianController extends Controller
         $saved_data=0;
         $periode=$periode-1;
         $const_periode=['perbulan', 'per triwulan', 'per semester', 'per tahun'];
-        $month=['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'Septmber', 'Oktober', 'November', 'Desember'];
+        $month=['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         if($periode === 0){
             for($x=0;$x<12;$x++){
                 $bulan=($x+1) < 10 ? '0'.($x+1) : ($x+1);
