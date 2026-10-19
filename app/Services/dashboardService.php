@@ -99,7 +99,7 @@ use Illuminate\Support\Facades\Crypt;
                                                     ->whereRaw("master_file_indikator.file_code = CONCAT('B-', c.id)");
                                             })
                                     ->leftJoin("edoc_indikator as b", "b.id_master", "=", "master_file_indikator.id")
-                                    ->where('id_bagian', $id_bagian)
+                                    ->where('master_file_indikator.id_bagian', $id_bagian)
                                     ->whereRaw('max_fill_at <= date(now())')
                                     ->whereRaw('year(max_fill_at) = '.$tahun)
                                     ->whereRaw('edoc is null')
