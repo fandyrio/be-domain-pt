@@ -44,6 +44,10 @@ use Illuminate\Support\Facades\Crypt;
                 //select c.bagian, count(a.file_name) from master_file_indikator a left join edoc_indikator b on b.id_master=a.id join bagian c on c.id = a.id_bagian where edoc is null group by a.id_bagian;
                 $get_edoc_kosong = Master_file_indikator::leftJoin('edoc_indikator as b', 'b.id_master', '=', 'master_file_indikator.id')
                                                 ->join('bagian as c', 'c.id', '=', 'master_file_indikator.id_bagian')
+                                                ->join("indikator_lvl2_user as d", function($join){
+                                                    $join->on("d.id_bagian", "=", "master_file_indikator.id_bagian")
+                                                            ->whereRaw("master_file_indikator.file_code = CONCAT('B-', d.id)");
+                                                })
                                                 ->whereRaw('edoc is null')
                                                 ->whereRaw('year(b.max_fill_at) = '.$tahun)
                                                 ->whereRaw('b.max_fill_at <= date(now())')
