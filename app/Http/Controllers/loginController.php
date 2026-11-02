@@ -68,15 +68,33 @@ class loginController extends Controller
         }
     }
 
-    public function logout(Request $request){
-        Auth::guard('web')->logout();
-        Cookie::queue(Cookie::forget('network'));
-        $request->session()->invalidate(); // ✅ Invalidate session
-        $request->session()->regenerateToken();  
-        $same_site=config('session.same_site');
-        $isSecure=config('session.secure');
-        $sub=config('session.accepted_sub');
-        return response()->json(['status'=>200, 'message'=>'Logged Out'])->withCookie(cookie('network', null, -1, '/', $sub, true, true, false, 'None'));
-        // return response()->json(['message'=>'Login berhasil', 'token'=>$token, 'status'=>200])->withCookie(cookie('network', $refreshToken, 60*24*7, '/', null, false, true, false, 'Lax'));
+    // public function logout(Request $request){
+    //     Auth::guard('web')->logout();
+    //     Cookie::queue(Cookie::forget('network'));
+    //     // $request->session()->invalidate(); // ✅ Invalidate session
+    //     // $request->session()->regenerateToken();  
+    //     $same_site=config('session.same_site');
+    //     $isSecure=config('session.secure');
+    //     $sub=config('session.accepted_sub');
+    //     return response()->json(['status'=>200, 'message'=>'Logged Out'])->withCookie(cookie('network', null, -1, '/', $sub, true, true, false, 'None'));
+    //     // return response()->json(['message'=>'Login berhasil', 'token'=>$token, 'status'=>200])->withCookie(cookie('network', $refreshToken, 60*24*7, '/', null, false, true, false, 'Lax'));
+    // }
+
+    public function logout(){
+        try{
+            $token=JWTAuth::parseToken();
+            JWTAuth::invalidate($token);
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Logged Out'
+            ])->withCookie(
+                cookie('network', null, -1, '/', null, false, true, false, 'None')
+            );
+        }catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+            return response()->json(['message' => 'Invalid token'], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response()->json(['message' => 'Token not provided'], 400);
+        }
     }
 }

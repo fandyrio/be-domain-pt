@@ -245,5 +245,17 @@ use Illuminate\Support\Facades\DB;
 
             return ['status'=>$status, 'msg'=>$msg];
         }
+
+        public function getPeriodePerbaikanPerTahun($tahun){
+            $data = [];
+            $get_data = Periode_perbaikan::where("tahun", $tahun)->get();
+            foreach($get_data as $list){
+                $data[] =[
+                    'tahun'=>$list['tahun']."-".$list['id'],
+                    'periode'=>"Perbaikan - ".$list['periode']
+                ];
+            }
+            return ['data'=>$data];
+        }
     }
 ?>

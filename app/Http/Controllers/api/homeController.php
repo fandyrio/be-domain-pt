@@ -25,7 +25,16 @@ use Illuminate\Support\Facades\DB;
 class homeController extends Controller
 {
     public function getDataChecklist($year){
-        $get_data=Ampuh_indikator::join('indikator_user as iu', 'iu.id_indikator', '=', 'ampuh_indikator.id')
+        $id_perbaikan = null;
+        $explode = explode("-", $year);
+        if(count($explode) === 2){
+            $year = $explode[0];
+            // $year = 2021;
+            $id_perbaikan = $explode[1];
+        }
+
+        if(is_null($id_perbaikan)){
+            $get_data=Ampuh_indikator::join('indikator_user as iu', 'iu.id_indikator', '=', 'ampuh_indikator.id')
                             ->leftJoin('ampuh_sub_indikator_lvl1 as lvl1', function($join){
                                             $join->on('lvl1.indikator_id', '=', 'ampuh_indikator.id')
                                                 ->where(function($w){
@@ -77,6 +86,65 @@ class homeController extends Controller
                             ->orderBy('lvl2', 'asc')
                             ->orderBy('lvl3', 'asc')
                             ->get();
+        }else{
+            $get_data=Ampuh_indikator::join('indikator_user as iu', 'iu.id_indikator', '=', 'ampuh_indikator.id')
+                            ->leftJoin('ampuh_sub_indikator_lvl1 as lvl1', function($join){
+                                            $join->on('lvl1.indikator_id', '=', 'ampuh_indikator.id')
+                                                ->where(function($w){
+                                                    $w->whereRaw('lvl1.rule_id is null')
+                                                    ->orWhere('lvl1.rule_id', 1);
+                                                });
+                                        })
+                            ->leftJoin('ampuh_sub_indikator_lvl2 as lvl2', function($join){
+                                            $join->on('lvl2.sub_indikator_lvl1_id', '=', 'lvl1.id')
+                                                ->where(function($w){
+                                                    $w->whereRaw('lvl2.rule_id is null')
+                                                    ->orWhere('lvl2.rule_id', 1);
+                                                });
+                                        })
+                            ->leftJoin('ampuh_sub_indikator_lvl3 as lvl3', function($join){
+                                            $join->on('lvl3.parent_id', '=', 'lvl2.id')
+                                                ->where(function($w){
+                                                    $w->whereRaw('lvl3.rule_id is null')
+                                                        ->orWhere('lvl3.rule_id', 1);
+                                                });
+                                        })
+                            ->leftJoin('ampuh_sub_indikator_lvl4 as lvl4', function($join){
+                                            $join->on('lvl4.parent_id', '=', 'lvl3.id')
+                                                ->where(function($w){
+                                                    $w->whereRaw('lvl4.rule_id is null')
+                                                    ->orWhere('lvl4.rule_id', 1);
+                                                });
+                                        })
+                            ->leftJoin('indikator_lvl4_user as lvl4_user', 'lvl4_user.id_indikator_lvl4', '=', 'lvl4.id')
+                            ->join("perbaikan_checklist as pc", "pc.indikator_lvl_id", "=", "lvl1.id")
+                            ->join("periode_perbaikan as pp", function($join) use($id_perbaikan){
+                                $join->on("pp.id", "=", "pc.periode_perbaikan_id")
+                                        ->where("pp.id", $id_perbaikan);
+                            })
+                            ->select('ampuh_indikator.id as id_parent', 'ampuh_indikator.indikator_name', 'lvl1.id as id_lvl1', 'lvl1.sub_indikator_name as lvl1', 'lvl1.is_folder_bagian as bagian_lvl1', 'lvl2.id as id_lvl2', 'lvl2.sub_indikator_name as lvl2', 'lvl2.is_folder_bagian as bagian_lvl2', 'lvl3.id as id_lvl3', 'lvl3.sub_indikator_name as lvl3', 'lvl3.is_folder_bagian as bagian_lvl3', 'lvl4.id as id_lvl4', 'lvl4.sub_indikator_name as lvl4', 'lvl4.is_folder_bagian as bagian_lvl4', 
+                                DB::raw('(CASE
+                                        WHEN lvl2.is_folder_bagian = true then (SELECT id from bagian where bagian = lvl2)
+                                        WHEN lvl3.is_folder_bagian = true then (SELECT id from bagian where bagian = lvl3)
+                                        WHEN lvl4.is_folder_bagian = true then (SELECT id from bagian where bagian = lvl4)
+                                        ELSE null END
+                                ) as id_bagian'),
+                                DB::raw('(CASE
+                                    WHEN lvl2.is_folder_bagian = true then (SELECT id from indikator_lvl2_user where id_indikator_lvl2 = id_lvl2 and tahun="'.$year.'")
+                                    WHEN lvl3.is_folder_bagian = true then (SELECT id from indikator_lvl3_user where id_indikator_lvl3 = id_lvl3 and tahun="'.$year.'")
+                                    WHEN lvl4.is_folder_bagian = true then (SELECT id from indikator_lvl4_user where id_indikator_lvl4 = id_lvl4 and tahun="'.$year.'")
+                                    ELSE null END
+                        ) as id_indikator')
+                            )
+                            ->whereRaw("ampuh_indikator.indikator_name not like '%00.%'")
+                            ->where('iu.tahun', $year)
+                            // ->orderBy('ampuh_indikator.indikator_name', 'asc')
+                            ->orderByRaw("CAST(SUBSTRING_INDEX(ampuh_indikator.indikator_name, '.', 1) as unsigned) ASC")
+                            ->orderBy('lvl1', 'asc')
+                            ->orderBy('lvl2', 'asc')
+                            ->orderBy('lvl3', 'asc')
+                            ->get();
+        }
 
         $data=[];
         $id_parent_before=null;
@@ -87,6 +155,7 @@ class homeController extends Controller
         $id_lvl5_before=null;
         $x=0;
         $index=0;
+        
         foreach($get_data as $list){
             $change_y=true;
             $change_z=true;

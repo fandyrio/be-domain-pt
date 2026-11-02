@@ -870,8 +870,20 @@ class checklistBagianController extends Controller
                 'nama_file' => ['required'],
                 'periode' => ['required', 'digits:1'],
                 'tahun' => ['required', 'digits:4'],
+                'is_perbaikan'=>['required', 'boolean'],
+                'periode_perbaikan'=>['required', 'string']
             ]);
             try{
+                $db=["indikator_lvl1_user", "indikator_lvl2_user", "indikator_lvl3_user", "indikator_lvl4_user", "indikator_lvl5_user"];
+
+                $indikator_id=['id_indikator_lvl1', 'id_indikator_lvl2', 'id_indikator_lvl3', 'id_indikator_lvl4', 'id_indikator_lvl5'];
+                
+                $db_master=["Ampuh_sub_indikator_lvl1", "Ampuh_sub_indikator_lvl2", "Ampuh_sub_indikator_lvl3", "Ampuh_sub_indikator_lvl4", "Ampuh_sub_indikator_lvl5"];
+
+                $kolom = ["indikator_id", "sub_indikator_lvl1_id", "parent_id", "parent_id"];
+
+                $get_active_perbaikan = Periode_perbaikan::where('active', true)
+                                                ->first();
                 $parent_id=Crypt::decrypt($request->parent_id);
                 $id_bagian=Crypt::decrypt($request->id_bagian_enc);
                 $tipe=$request->tipe_indikator;
@@ -879,10 +891,35 @@ class checklistBagianController extends Controller
                 $file_name=$request->nama_file;
                 $periode=$request->periode;
                 $tahun=$request->tahun;
+                $is_perbaikan = false;
+                $periode_perbaikan_id = null;
+                
+                if(!is_null($get_active_perbaikan)){
+                    $periode_str = $get_active_perbaikan->periode;
+                    $id_periode = $get_active_perbaikan->id;
+                    if($periode_str !== $request->periode_perbaikan){
+                        return response()->json(['status'=>false, 'msg'=>'Data tidak sesuai. Jangan memanipulasi data']);
+                    }
+
+                    $get_perbaikan = app("App\\Models\\".$db_master[$level-1])::join("perbaikan_checklist as pc", "pc.indikator_lvl_id", "=", strtolower($db_master[$level-1]).".".$kolom[$level-1])
+                                        ->join("periode_perbaikan as pp", function($join){
+                                            $join->on("pp.id", "=", "pc.periode_perbaikan_id")
+                                                    ->where("pp.active", true);
+                                        })
+                                        ->where(strtolower($db_master[$level-1]).".id", $parent_id)
+                                        ->first();
+                    if(!is_null($get_perbaikan)){
+                        $file_name = "Perbaikan ".$periode_str." - ".$file_name;
+                        $is_perbaikan = true;
+                        $periode_perbaikan_id = $id_periode;
+                    }
+
+                    if($request->is_perbaikan !== $is_perbaikan){
+                        return response()->json(['status'=>false, 'msg'=> 'Data tidak sesuai. Informasi perbaikan data tidak sesuai']);
+                    }
+                }
     
-                $db=["indikator_lvl1_user", "indikator_lvl2_user", "indikator_lvl3_user", "indikator_lvl4_user", "indikator_lvl5_user"];
-                $indikator_id=['id_indikator_lvl1', 'id_indikator_lvl2', 'id_indikator_lvl3', 'id_indikator_lvl4', 'id_indikator_lvl5'];
-                $db_master=["Ampuh_sub_indikator_lvl1", "Ampuh_sub_indikator_lvl2", "Ampuh_sub_indikator_lvl3", "Ampuh_sub_indikator_lvl4", "Ampuh_sub_indikator_lvl5"];
+                
                 $get_data=app("App\\Models\\".$db_master[$level-1])::join($db[$level-1].' as b', function($join) use($id_bagian, $indikator_id, $level, $db_master, $tahun){
                                                                         $join->on("b.".$indikator_id[$level-1], '=', strtolower($db_master[$level-1]).".id")
                                                                         ->where('id_bagian', $id_bagian)
@@ -905,6 +942,8 @@ class checklistBagianController extends Controller
                             $new_file->no_urut=$jumlah+1;
                             $new_file->file_name=$file_name;
                             $new_file->periode=$periode;
+                            $new_file->is_perbaikan = $is_perbaikan;
+                            $new_file->periode_perbaikan_id = $periode_perbaikan_id;
                             $new_file->gd_id=$createFolder;
                             $save_file=$new_file->save();
                             if($save_file){
@@ -1136,5 +1175,16 @@ class checklistBagianController extends Controller
             $msg = $e->validator->errors()->first();
         }
         return response()->json(['status'=>$status, 'msg'=>$msg]);
+    }
+
+    public function getPeriodePerbaikan($tahun){
+        $status = false;
+        $data = null;
+        $msg = "";
+        $get_data = $this->checklistBagianService->getPeriodePerbaikanPerTahun($tahun);
+        $data = $get_data['data'];
+        $status = true;
+        
+        return response()->json(['status'=>$status, 'msg'=>$msg, 'data'=>$data]);
     }
 }

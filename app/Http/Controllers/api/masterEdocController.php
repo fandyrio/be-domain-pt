@@ -23,6 +23,7 @@ class masterEdocController extends Controller
         $jumlah=0;
         $tree=[];
         $isPj=false;
+        $perbaikan_aktif = false;
         
         $get_data_tree=$this->management_service->getDataChecklistBagian($request->user()->citizen_id, $id_bagian_enc, $tahun);
         if($get_data_tree['status']){
@@ -31,13 +32,15 @@ class masterEdocController extends Controller
             $tree=$get_data_tree['data_tree'];
             $isPj=$get_data_tree['isPj'];
             $isAdmin = $get_data_tree['isAdmin'];
+            $perbaikan_aktif = $get_data_tree['perbaikan_aktif'];
+            $periode_perbaikan = $get_data_tree['periode_perbaikan'];
             if($isAdmin){
                 $isPj = true;
             }
         }else{
             $msg=$get_data_tree['msg'];
         }
-        return response()->json(['status'=>$status, 'total'=>$jumlah, 'tree'=>$tree, 'id_bagian'=>Crypt::decrypt($id_bagian_enc), 'msg'=>$msg, 'current_year'=>$tahun, 'isPj'=>$isPj]);
+        return response()->json(['status'=>$status, 'total'=>$jumlah, 'tree'=>$tree, 'id_bagian'=>Crypt::decrypt($id_bagian_enc), 'msg'=>$msg, 'current_year'=>$tahun, 'isPj'=>$isPj, 'perbaikan_aktif'=>$perbaikan_aktif, 'periode_perbaikan'=>$periode_perbaikan]);
     }
 
     public function updateEdocMaster(Request $request){

@@ -9,5 +9,5 @@ class Master_file_indikator extends Model
 {
     // use HasFactory;
     protected $table="master_file_indikator";
-    protected $fillable=["id", "file_code", "file_name", "periode", "gd_id"];
+    protected $fillable=["id", "file_code", "file_name", "periode", "gd_id", "is_perbaikan", "periode_perbaikan_id"];
 }

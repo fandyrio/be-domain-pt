@@ -104,7 +104,7 @@ Route::post('delete-file-edoc', 'api\masterEdocController@deleteFileEdoc')->name
 
 //home
 Route::get('get-checklist-home/{year}', 'api\homeController@getDataChecklist')->name('get-checklist-home');
-
+Route::get("periode-perbaikan/{year}", "api\checklistBagianController@getPeriodePerbaikan")->name("periode-perbaikan");
 
 //monitoring
 Route::get('list-tunggakan/{year}', 'api\monitoringController@dataTunggakan');

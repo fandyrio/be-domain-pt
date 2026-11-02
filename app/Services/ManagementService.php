@@ -30,10 +30,10 @@ use Illuminate\Validation\ValidationException;
             $isPjBagian=false;
             $isAdmin = false;
             $current_year=$year === null ? date('Y') : $year;
+            $perbaikan = $this->adaPerbaikanAktif($current_year);
             try{
                 $id_bagian=Crypt::decrypt($id_bagian_enc);
                 $id_perbaikan = [];
-               
                 $get_data=Indikator_user::join('ampuh_indikator as a', function($join) use($id_bagian){
                                                 $join->on('a.id', '=', 'indikator_user.id_indikator')
                                                 ->where('indikator_user.id_bagian', $id_bagian)
@@ -145,14 +145,16 @@ use Illuminate\Validation\ValidationException;
             }catch(DecryptException $e){
                 $msg="Invalid token";
             }
-
+            
             return [
                 'data_tree'=>$data_tree,
                 'total'=>$jumlah,
                 'msg'=>$msg,
                 'status'=>$status,
                 'isPj'=>$isPjBagian,
-                'isAdmin'=>$isAdmin
+                'isAdmin'=>$isAdmin,
+                'perbaikan_aktif'=>$perbaikan['ada_perbaikan_aktif'],
+                'periode_perbaikan'=>$perbaikan['periode']
             ];
         }
         public function treeData($data, $id_bagian, $current_year){
@@ -179,6 +181,7 @@ use Illuminate\Validation\ValidationException;
                     
                     $lvl1['perbaikan'] = count($get_perbaikan) > 0 ? true : false;
                     $lvl1['catatan_perbaikan'] = $get_perbaikan;
+                    
                     //generate file master
                     if((int)$list_data['folder_bagian_lvl1'] === 1){
                         $get_file_master=$this->getFileMaster('A', $list_data['id_indikator_user_lvl1'], $id_bagian);
@@ -309,6 +312,19 @@ use Illuminate\Validation\ValidationException;
             }
 
             return $data;
+        }
+
+        public function adaPerbaikanAktif($current_year){
+            $periode = "-";
+            $ada_perbaikan_aktif = false;
+            $get_data = Periode_perbaikan::where("tahun", $current_year)
+                                    ->where('active', true)
+                                    ->first();
+            if(!is_null($get_data)){
+                $periode = $get_data->periode;
+                $ada_perbaikan_aktif = true;
+            }
+            return ['ada_perbaikan_aktif'=>$ada_perbaikan_aktif, 'periode'=>$periode];
         }
 
         public function getEdocMaster($id_master){
