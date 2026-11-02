@@ -8,7 +8,11 @@ use App\Models\Indikator_user;
     use App\Models\Indikator_lvl3_user;
     use App\Models\Indikator_lvl4_user;
     use App\Models\Indikator_lvl5_user;
-    use Illuminate\Support\Facades\DB;
+use App\Models\Perbaikan_checklist;
+use App\Models\Periode_perbaikan;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 
     class ChecklistBagianService{
         public function generateChecklistBagian($tahun, $id_bagian, $year_generate){
@@ -174,6 +178,69 @@ use App\Models\Indikator_user;
             }catch(\Exception $e){
                 DB::rollBack();
                 $msg=$e->getMessage();
+            }
+
+            return ['status'=>$status, 'msg'=>$msg];
+        }
+
+        public function getActivePeriodePerbaikan(){
+            $status = false;
+            $msg = "Data tidak ditemukan";
+            $data = [];
+            $get_data =Periode_perbaikan::where("active", true)->first();
+            if(!is_null($get_data)){
+                $status = true;
+                $msg = "";
+                $data[] = [
+                    'token'=>Crypt::encrypt($get_data->id),
+                    'tahun'=>$get_data->tahun,
+                    'periode'=>$get_data->periode
+                ];
+            }
+
+            return ['status'=>$status, 'msg'=>$msg, 'data'=>$data];
+        }
+
+        public function saveCatatanPerbaikan($parent_id, $level, $catatan, $id_bagian, $tahun, $periode_perbaikan){
+            $status = false;
+            $msg = "";
+            $table_indikator = ['Indikator_user', 'Indikator_lvl1_user', 'Indikator_lvl2_user', 'Indikator_lvl3_user', 'Indikator_lvl4_user', 'Indikator_lvl5_user'];
+            $table_master = ['ampuh_indikator', "ampuh_sub_indikator_lvl1", "ampuh_sub_indikator_lvl2", "ampuh_sub_indikator_lvl3", "ampuh_sub_indikator_lvl4", "ampuh_sub_indikator_lvl5"];
+            $kolom_ref = ["id_indikator", "id_indikator_lvl1", "id_indikator_lvl2", "id_indikator_lvl3", "id_indikator_lvl4"];
+            
+            $get_data = app("App\\Models\\".$table_indikator[$level])::join($table_master[$level]." as master", "master.id", "=", strtolower($table_indikator[$level]).".".$kolom_ref[$level])
+                                        ->where(strtolower($table_indikator[$level]).".id_bagian", $id_bagian)
+                                        ->where(strtolower($table_indikator[$level]).".tahun", $tahun)
+                                        ->where(strtolower($table_indikator[$level]).".".$kolom_ref[$level], $parent_id)
+                                        ->first();
+            $get_periode_perbaikan = Periode_perbaikan::where("id", $periode_perbaikan)
+                                        ->where("active", true)
+                                        ->first();
+            if(!is_null($get_data) && !is_null($get_periode_perbaikan)){
+                $get_data = Perbaikan_checklist::where("level", $level)
+                                ->where('periode_perbaikan_id', $periode_perbaikan)
+                                ->where('indikator_lvl_id', $parent_id)
+                                ->exists();
+                if(!$get_data){
+                    $perbaikan = new Perbaikan_checklist;
+                    $perbaikan->level = $level;
+                    $perbaikan->periode_perbaikan_id = $periode_perbaikan;
+                    $perbaikan->indikator_lvl_id = $parent_id;
+                    $perbaikan->catatan = $catatan;
+                    $perbaikan->created_at = date(now());
+                    $status = $perbaikan->save();
+                    // $status = true;
+                    if($status){
+                        $msg = "Berhasil menyimpan data";
+                    }else{
+                        $msg = "Terjadi kesalahan sistem saat menyimpan data";
+                    }
+                }else{
+                    $msg = "Data sudah ada";
+                }
+                
+            }else{
+                $msg = "Data tidak ditemukan";
             }
 
             return ['status'=>$status, 'msg'=>$msg];

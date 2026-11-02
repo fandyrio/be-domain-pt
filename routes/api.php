@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -84,6 +85,9 @@ Route::post('delete-indikator-bagian', 'api\checklistBagianController@deleteIndi
 Route::post('save-checklist-data-bagian', 'api\checklistBagianController@saveChecklistBagian')->name('saev-checklist-data-bagian')->middleware('auth:api');
 Route::post('generate-checklist-bagian', 'api\checklistBagianController@generateChecklistBagian')->name('generate-checklist-bagian')->middleware('auth:api');
 Route::post("remove-checklist-bagian", 'api\checklistBagianController@removeChecklistBagian')->name('remove-checklist-bagian')->middleware(['auth:api', 'isAdmin']);
+Route::post("save-perbaikan-checklist", "api\checklistBagianController@saveChecklistPerbaikan")->name("save-perbaikan-checklist")->middleware(['auth:api', 'isAdmin']);
+Route::post("save-catatan-perbaikan", "api\checklistBagianController@saveCatatanPerbaikan")->name('save-catatan-perbaikan')->middleware(['auth:api', 'isAdmin']);
+Route::get("periode-perbaikan-active", "api\checklistBagianController@getPeriodePerbaikanActive")->name("periode-perbaikan-active")->middleware(['auth:api', 'isAdmin']);
 
 //pj bagian
 Route::get('list-pj', 'api\pjBagianController@getListPJ')->name('list-pj')->middleware('auth:api');
@@ -113,3 +117,7 @@ Route::post('send-msg-tunggakan', 'api\monitoringController@sendMsgTunggakan')->
 Route::get('data-dashboard/{tahun}', 'api\dashboardController@getDataChecklistTahunan')->middleware(['auth:api']);
 Route::get('list-edoc-kosong/{id_bagian}/{tahun}', 'api\dashboardController@getListEdocBelumDiisi')->middleware(['auth:api']);
 Route::get("list-edoc-belum-periode/{id_bagian}/{tahun}", "api\dashboardController@getListEdocBelumPeriode")->middleware(['auth:api']);
+Route::get('/test-log', function () {
+    Log::error('TEST LOG LARAVEL');
+    return 'Log berhasil dipanggil';
+});

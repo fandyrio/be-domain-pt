@@ -6,7 +6,9 @@
     use App\Models\Master_file_indikator;
     use App\Models\Periode;
     use App\Models\Edoc_indikator;
-    use Illuminate\Validation\ValidationException;
+use App\Models\Perbaikan_checklist;
+use App\Models\Periode_perbaikan;
+use Illuminate\Validation\ValidationException;
     use App\Services\GoogleDriveService;
 
 
@@ -30,6 +32,8 @@
             $current_year=$year === null ? date('Y') : $year;
             try{
                 $id_bagian=Crypt::decrypt($id_bagian_enc);
+                $id_perbaikan = [];
+               
                 $get_data=Indikator_user::join('ampuh_indikator as a', function($join) use($id_bagian){
                                                 $join->on('a.id', '=', 'indikator_user.id_indikator')
                                                 ->where('indikator_user.id_bagian', $id_bagian)
@@ -134,7 +138,7 @@
                                 ->orderBy('j.sub_indikator_name', 'asc')
                                 ->get();
                 $jumlah=$get_data->count();
-                $data_tree=$this->treeData($get_data, $id_bagian);
+                $data_tree=$this->treeData($get_data, $id_bagian, $current_year);
                 $isPjBagian=$this->userServices->isPjBagian($citizen_id, $id_bagian);
                 $isAdmin=$this->userServices->isAdmin($citizen_id);
                 $status=true;
@@ -151,7 +155,7 @@
                 'isAdmin'=>$isAdmin
             ];
         }
-        public function treeData($data, $id_bagian){
+        public function treeData($data, $id_bagian, $current_year){
             $jumlah_data=count($data);
             $data_tree=[];
             $parent_before=$lvl1_before=$lvl2_before=$lvl3_before=$lvl4_before=$lvl5_before="";
@@ -171,6 +175,10 @@
                     $lvl1['nama']=$list_data['lvl1'];
                     $lvl1['id']=$list_data['id_lvl1'];
                     $lvl1['is_folder_bagian']=(int)$list_data['folder_bagian_lvl1'];
+                    $get_perbaikan = $this->getCatatanPerbaikan($current_year, $list_data['id_lvl1']);
+                    
+                    $lvl1['perbaikan'] = count($get_perbaikan) > 0 ? true : false;
+                    $lvl1['catatan_perbaikan'] = $get_perbaikan;
                     //generate file master
                     if((int)$list_data['folder_bagian_lvl1'] === 1){
                         $get_file_master=$this->getFileMaster('A', $list_data['id_indikator_user_lvl1'], $id_bagian);
@@ -283,6 +291,24 @@
                 'jumlah'=>$jumlah,
                 'data'=>$data,
             ];
+        }
+
+        public function getCatatanPerbaikan($current_year, $indikator_lvl){
+            $data = [];
+            $get_data = Perbaikan_checklist::join('periode_perbaikan as pp', 'pp.id', '=', 'perbaikan_checklist.periode_perbaikan_id')
+                                    ->select("perbaikan_checklist.catatan", "pp.periode")
+                                    ->where("pp.tahun", $current_year)
+                                    ->where("perbaikan_checklist.indikator_lvl_id", $indikator_lvl)
+                                    ->get();
+
+            foreach($get_data as $list){
+                $data[] = [
+                    'periode'=>$list['periode'],
+                    'catatan'=>$list['catatan']
+                ];
+            }
+
+            return $data;
         }
 
         public function getEdocMaster($id_master){

@@ -17,6 +17,8 @@ use App\Models\Indikator_lvl4_user;
 use App\Models\Indikator_lvl5_user;
 use App\Services\GoogleDriveService;
 use App\Models\Master_file_indikator;
+use App\Models\Periode;
+use App\Models\Periode_perbaikan;
 use App\Services\bagianService;
 use App\Services\ChecklistBagianService;
 use Illuminate\Validation\ValidationException;
@@ -1080,6 +1082,59 @@ class checklistBagianController extends Controller
             $msg=$e->validator->errors()->first();
         }
 
+        return response()->json(['status'=>$status, 'msg'=>$msg]);
+    }
+
+    public function getPeriodePerbaikanActive(){
+        $get_data = $this->checklistBagianService->getActivePeriodePerbaikan();
+        return response()->json(['status'=>$get_data['status'], 'msg'=>$get_data['msg'], 'data'=>$get_data['data']]); 
+    }
+
+    public function saveChecklistPerbaikan(Request $request){
+        $status = false;
+        $msg = "";
+        try{
+            $request->validate([
+                'level'=>['required', 'numeric'],
+                'id_bagian'=>['required', 'string'],
+                'tahun'=>['required', 'digits:4'],
+                'parent_id'=>['required', 'string'],
+                'catatan'=>['required', 'string'],
+                'payload'=>['required', 'string'],
+                'periode_perbaikan'=>['required', 'string']
+            ]);
+            try{
+                $id_bagian = Crypt::decrypt($request->id_bagian);
+                $parent_id = Crypt::decrypt($request->parent_id);
+                $periode_perbaikan = Crypt::decrypt($request->periode_perbaikan);
+                if((int)$request->tahun !== (int)date("Y")){
+                    return response()->json(['status'=>false, 'msg'=>'Data tidak valid']);
+                }
+                //payload: parent_id:id_bagian:tahun:level
+                $explode_payload = explode(":", $request->payload);
+                if(count($explode_payload) !== 4){
+                    return response()->json(['status'=>false, 'msg'=> 'Data tidak valid[1]']);
+                }
+
+                $payload_parent = Crypt::decrypt($explode_payload[0]);
+                $payload_id_bagian = Crypt::decrypt($explode_payload[1]);
+                $payload_tahun = (int)$explode_payload[2] / 12;
+                $payload_level = (int)$explode_payload[3] / 24;
+                
+                if((int)$parent_id !== (int)$payload_parent || (int)$payload_tahun !== (int)$request->tahun || (int)$payload_id_bagian !== (int)$id_bagian || (int)$payload_level !== (int)$request->level){
+                    return response()->json(['status'=>false, 'msg'=>'Data tidak valid[2] ']);
+                }
+
+                $save = $this->checklistBagianService->saveCatatanPerbaikan($parent_id, $request->level, $request->catatan, $id_bagian, $request->tahun, $periode_perbaikan);
+                $status = $save['status'];
+                $msg = $save['msg'];
+
+            }catch(DecryptException $e){
+                $msg = "Invalid token";
+            }
+        }catch(ValidationException $e){
+            $msg = $e->validator->errors()->first();
+        }
         return response()->json(['status'=>$status, 'msg'=>$msg]);
     }
 }

@@ -36,6 +36,7 @@ class loginController extends Controller
                     $isSecure=config('session.secure');
                     $sub=config('session.accepted_sub');
                     return response()->json(['message'=>'Login berhasil', 'token'=>$token, 'status'=>200])->withCookie(cookie('network', $refreshToken, 60*24*7, $sub, null, true, true, false, 'None'));
+                    // return response()->json(['message'=>'Login berhasil ', 'token'=>$token, 'status'=>200])->withCookie(cookie('network', $refreshToken, 60*24*7, $sub, null, false, true, false, 'Lax'));
                 }else{
                     return response()->json(['message'=>'Password salah', 'status'=>401]);
                 }
@@ -62,19 +63,20 @@ class loginController extends Controller
             $same_site=config('session.same_site');
             $isSecure=config('session.secure');
             $sub=config('session.accepted_sub');
-            return response()->json(['message'=>'Invalid or expired token '.$e->getMessage()], 401)->withCookie(cookie('network', null, -1, '/', null, false, true, false, 'None'));
+            // return response()->json([$refreshToken])
+            return response()->json(['message'=>'Invalid or expired token '.$e->getMessage()], 401)->withCookie(cookie('network', null, -1, '/', null, true, true, false, 'None'));
         }
     }
 
     public function logout(Request $request){
-        // Auth::guard('web')->logout();
-        // Cookie::queue(Cookie::forget('network'));
-        // $request->session()->invalidate(); // ✅ Invalidate session
-        // $request->session()->regenerateToken();  
+        Auth::guard('web')->logout();
+        Cookie::queue(Cookie::forget('network'));
+        $request->session()->invalidate(); // ✅ Invalidate session
+        $request->session()->regenerateToken();  
         $same_site=config('session.same_site');
         $isSecure=config('session.secure');
         $sub=config('session.accepted_sub');
-        return response()->json(['status'=>200, 'message'=>'Logged Out'])->withCookie(cookie('network', null, -1, '/', $sub, $isSecure, true, false, $same_site));
+        return response()->json(['status'=>200, 'message'=>'Logged Out'])->withCookie(cookie('network', null, -1, '/', $sub, true, true, false, 'None'));
         // return response()->json(['message'=>'Login berhasil', 'token'=>$token, 'status'=>200])->withCookie(cookie('network', $refreshToken, 60*24*7, '/', null, false, true, false, 'Lax'));
     }
 }

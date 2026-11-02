@@ -18,6 +18,7 @@ use App\Models\Indikator_lvl3_user;
 use App\Models\Indikator_lvl4_user;
 use App\Models\Indikator_lvl5_user;
 use App\Models\Master_file_indikator;
+use App\Models\Perbaikan_checklist;
 use Illuminate\Support\Facades\DB;
 
 
@@ -108,9 +109,13 @@ class homeController extends Controller
                     $change_z=false;
                 }
                 $z=0;$z1=0;
+                $get_catatan = $this->getCatatanPerbaikan($year, $list['id_lvl1']);
+                
                 $data[$x]['lvl1'][]=[
                     'id_lvl1'=>$list['id_lvl1'],
                     'nama_lvl1'=>$list['lvl1'],
+                    'perbaikan'=>count($get_catatan) > 0 ? true : false,
+                    'catatan_perbaikan'=>$get_catatan
                 ];
                 
             }
@@ -177,6 +182,24 @@ class homeController extends Controller
         // $data=[];
         $data=$this->getDataChecklist();
         return view('list', ['data'=>$data['data'], 'no'=>1]);
+    }
+
+     public function getCatatanPerbaikan($current_year, $indikator_lvl){
+        $data = [];
+        $get_data = Perbaikan_checklist::join('periode_perbaikan as pp', 'pp.id', '=', 'perbaikan_checklist.periode_perbaikan_id')
+                                ->select("perbaikan_checklist.catatan", "pp.periode")
+                                ->where("pp.tahun", $current_year)
+                                ->where("perbaikan_checklist.indikator_lvl_id", $indikator_lvl)
+                                ->get();
+
+        foreach($get_data as $list){
+            $data[] = [
+                'periode'=>$list['periode'],
+                'catatan'=>$list['catatan']
+            ];
+        }
+
+        return $data;
     }
 
     public function generateEdocFile($id_indikator, $level){
