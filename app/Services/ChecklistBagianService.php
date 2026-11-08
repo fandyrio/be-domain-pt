@@ -194,14 +194,15 @@ use Illuminate\Support\Facades\DB;
                 $data[] = [
                     'token'=>Crypt::encrypt($get_data->id),
                     'tahun'=>$get_data->tahun,
-                    'periode'=>$get_data->periode
+                    'periode'=>$get_data->periode,
+                    "selected"=>true
                 ];
             }
 
             return ['status'=>$status, 'msg'=>$msg, 'data'=>$data];
         }
 
-        public function saveCatatanPerbaikan($parent_id, $level, $catatan, $id_bagian, $tahun, $periode_perbaikan){
+        public function saveCatatanPerbaikan($parent_id, $level, $catatan, $id_bagian, $tahun, $periode_perbaikan, $effected_bagian_arr){
             $status = false;
             $msg = "";
             $table_indikator = ['Indikator_user', 'Indikator_lvl1_user', 'Indikator_lvl2_user', 'Indikator_lvl3_user', 'Indikator_lvl4_user', 'Indikator_lvl5_user'];
@@ -227,6 +228,7 @@ use Illuminate\Support\Facades\DB;
                     $perbaikan->periode_perbaikan_id = $periode_perbaikan;
                     $perbaikan->indikator_lvl_id = $parent_id;
                     $perbaikan->catatan = $catatan;
+                    $perbaikan->id_bagian = json_encode($effected_bagian_arr);
                     $perbaikan->created_at = date(now());
                     $status = $perbaikan->save();
                     // $status = true;
@@ -256,6 +258,12 @@ use Illuminate\Support\Facades\DB;
                 ];
             }
             return ['data'=>$data];
+        }
+
+        public function getBagianBundle($id_bagian_arr){
+            $get_data = Bagian::whereIn("id", $id_bagian_arr);
+
+            return ['data'=>$get_data->get(), 'jumlah'=>$get_data->count()];
         }
     }
 ?>

@@ -249,8 +249,8 @@ class homeController extends Controller
 
     public function getData(){
         // $data=[];
-        $data=$this->getDataChecklist();
-        return view('list', ['data'=>$data['data'], 'no'=>1]);
+        // $data=$this->getDataChecklist();
+        // return view('list', ['data'=>$data['data'], 'no'=>1]);
     }
 
      public function getCatatanPerbaikan($current_year, $indikator_lvl){
@@ -273,6 +273,7 @@ class homeController extends Controller
 
     public function generateEdocFile($id_indikator, $level){
         $edoc=null;
+        $is_perbaikan = false;
         $filename=null;
         $string_lvl=['A', 'B', 'C', 'D', 'E', 'F'];
         $get_data_indikator=Master_file_indikator::where('file_code', $string_lvl[$level-1].'-'.$id_indikator)->get();
@@ -281,7 +282,9 @@ class homeController extends Controller
             $x=0;
             foreach($get_data_indikator as $file_indikator){
                 $filename=$file_indikator['file_name'];
+                $is_perbaikan = $file_indikator['is_perbaikan'];
                 $edoc[$x]['filename']=$filename;
+                $edoc[$x]['is_perbaikan'] = $is_perbaikan;
                 $get_edoc=Edoc_indikator::where('id_master', $file_indikator['id'])
                             ->where('max_fill_at', '<', date(now()))
                             ->get();
@@ -302,7 +305,7 @@ class homeController extends Controller
 
         return [
             'edoc' => $edoc,
-            'filename' => $filename,
+            'filename' => $filename
         ];
     }
 }

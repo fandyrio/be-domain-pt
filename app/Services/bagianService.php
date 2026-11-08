@@ -36,6 +36,22 @@ use Illuminate\Support\Facades\Crypt;
             
         }
 
+        public function getBagianByIdBundle($id_bagian_arr){
+            $data = [];
+            $get_bagian = Bagian::wherein("id", $id_bagian_arr)->get();
+            $jumlah = $get_bagian->count();
+            if($jumlah > 0){
+                foreach($get_bagian as $bagian){
+                    $data[] = [
+                        "token"=>Crypt::encrypt($bagian['id']),
+                        "bagian"=>$bagian['bagian'],
+                        "id"=>$bagian['id'] * 3001      //dikali 30 (disamakan dengan managementService::getEffectedBagian)
+                    ];
+                }
+            }
+            return $data;
+        }
+
         public function getPJBagian(){
             $data=[];
             $x=0;

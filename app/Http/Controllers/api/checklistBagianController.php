@@ -21,6 +21,7 @@ use App\Models\Periode;
 use App\Models\Periode_perbaikan;
 use App\Services\bagianService;
 use App\Services\ChecklistBagianService;
+use App\Services\ManagementService;
 use Illuminate\Validation\ValidationException;
 
 class checklistBagianController extends Controller
@@ -29,11 +30,13 @@ class checklistBagianController extends Controller
     protected $googleDriveService;
     protected $checklistBagianService;
     protected $bagianService;
+    protected $managementService;
 
-    public function __construct(GoogleDriveService $googleDriveService, ChecklistBagianService $checklist_bagian_service, bagianService $bagian_service){
+    public function __construct(GoogleDriveService $googleDriveService, ChecklistBagianService $checklist_bagian_service, bagianService $bagian_service, ManagementService $management_service){
         $this->googleDriveService=$googleDriveService;
         $this->checklistBagianService=$checklist_bagian_service;
         $this->bagianService=$bagian_service;
+        $this->managementService = $management_service;
     }
 
     public function saveChecklist(Request $request){
@@ -1129,6 +1132,7 @@ class checklistBagianController extends Controller
         return response()->json(['status'=>$get_data['status'], 'msg'=>$get_data['msg'], 'data'=>$get_data['data']]); 
     }
 
+
     public function saveChecklistPerbaikan(Request $request){
         $status = false;
         $msg = "";
@@ -1140,7 +1144,8 @@ class checklistBagianController extends Controller
                 'parent_id'=>['required', 'string'],
                 'catatan'=>['required', 'string'],
                 'payload'=>['required', 'string'],
-                'periode_perbaikan'=>['required', 'string']
+                'periode_perbaikan'=>['required', 'string'],
+                'effected_bagian_arr'=>['required', 'array']
             ]);
             try{
                 $id_bagian = Crypt::decrypt($request->id_bagian);
@@ -1151,20 +1156,53 @@ class checklistBagianController extends Controller
                 }
                 //payload: parent_id:id_bagian:tahun:level
                 $explode_payload = explode(":", $request->payload);
-                if(count($explode_payload) !== 4){
+                if(count($explode_payload) !== 5){
                     return response()->json(['status'=>false, 'msg'=> 'Data tidak valid[1]']);
+                }
+
+                $list_bagian = $this->managementService->getEffectedBagian($parent_id, $request->level, $request->tahun);
+                $jumlah_exists = $list_bagian['jumlah'];
+                $jumlah_input = count($request->effected_bagian_arr);
+                if((int)$jumlah_exists !== (int)$jumlah_input){
+                    return response()->json(['status'=>false, 'msg'=>'Data tidak valid[3]']);
+                }
+                $effected_bagian_arr = [];
+                $valid_id_bagian = 0;
+                try{
+                    for($x=0;$x<$jumlah_input;$x++){
+                        if($request->effected_bagian_arr[$x] !== "" && !is_null($request->effected_bagian_arr[$x])){
+                            $effected_bagian_arr[] = $request->effected_bagian[$x] / 3001;
+                        }else{
+                            $valid_id_bagian+=1;
+                        }
+                    }
+                }catch(DecryptException $e){
+                    return response()->json(['status'=>false, 'msg'=>"Invalid token"]);
+                }
+
+                if(count($effected_bagian_arr) === 0){
+                    return response()->json(['status'=>false, 'msg'=>'Tidak ada bagian yang terpilih']);
+                }
+
+                $check_exists_bagian = $this->checklistBagianService->getBagianBundle($effected_bagian_arr);
+                if((int)$check_exists_bagian['jumlah'] !== (int)count($effected_bagian_arr)){
+                    return response()->json(['status'=>false, 'msg'=>'Data bagian tidak sesuai']);
                 }
 
                 $payload_parent = Crypt::decrypt($explode_payload[0]);
                 $payload_id_bagian = Crypt::decrypt($explode_payload[1]);
                 $payload_tahun = (int)$explode_payload[2] / 12;
                 $payload_level = (int)$explode_payload[3] / 24;
+                // $
+                if($explode_payload[4] !== ""){
+
+                }
                 
                 if((int)$parent_id !== (int)$payload_parent || (int)$payload_tahun !== (int)$request->tahun || (int)$payload_id_bagian !== (int)$id_bagian || (int)$payload_level !== (int)$request->level){
                     return response()->json(['status'=>false, 'msg'=>'Data tidak valid[2] ']);
                 }
 
-                $save = $this->checklistBagianService->saveCatatanPerbaikan($parent_id, $request->level, $request->catatan, $id_bagian, $request->tahun, $periode_perbaikan);
+                $save = $this->checklistBagianService->saveCatatanPerbaikan($parent_id, $request->level, $request->catatan, $id_bagian, $request->tahun, $periode_perbaikan, $effected_bagian_arr);
                 $status = $save['status'];
                 $msg = $save['msg'];
 
@@ -1185,6 +1223,6 @@ class checklistBagianController extends Controller
         $data = $get_data['data'];
         $status = true;
         
-        return response()->json(['status'=>$status, 'msg'=>$msg, 'data'=>$data]);
+    return response()->json(['status'=>$status, 'msg'=>$msg, 'data'=>$data]);
     }
 }

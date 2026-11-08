@@ -100,6 +100,8 @@ Route::post('update-edoc-master', 'api\masterEdocController@updateEdocMaster')->
 Route::post('delete-edoc-master', 'api\masterEdocController@deleteEdocMaster')->name('delete-edoc-master')->middleware('auth:api');
 Route::post('update-file-edoc', 'api\masterEdocController@updateFileEdoc')->name('update-file-edoc')->middleware('auth:api');
 Route::post('delete-file-edoc', 'api\masterEdocController@deleteFileEdoc')->name('delete-file-edoc')->middleware('auth:api');
+Route::post("effected-bagian", "api\masterEdocController@getEffectedBagian")->name("get-effected-bagian")->middleware('auth:api');
+Route::post('perbaikan-detil', "api\masterEdocController@getPerbaikanDetil")->name("perbaikan-detil")->middleware('auth:api');
 
 
 //home

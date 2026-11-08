@@ -6,9 +6,9 @@
     use App\Models\Master_file_indikator;
     use App\Models\Periode;
     use App\Models\Edoc_indikator;
-use App\Models\Perbaikan_checklist;
-use App\Models\Periode_perbaikan;
-use Illuminate\Validation\ValidationException;
+    use App\Models\Perbaikan_checklist;
+    use App\Models\Periode_perbaikan;
+    use Illuminate\Validation\ValidationException;
     use App\Services\GoogleDriveService;
 
 
@@ -274,7 +274,7 @@ use Illuminate\Validation\ValidationException;
             $data=[];
             $file_code=$codeAlpha."-".$id_indikator_user;
             $get_master_file=Master_file_indikator::join('periode', 'periode.id', '=', 'master_file_indikator.periode')
-                        ->select('master_file_indikator.file_name', 'master_file_indikator.id as id_master_file', 'periode.periode', 'periode.id as id_periode')
+                        ->select('master_file_indikator.file_name', 'master_file_indikator.id as id_master_file', 'periode.periode', 'periode.id as id_periode', 'master_file_indikator.is_perbaikan')
                         ->where('file_code', $file_code)
                         ->where('id_bagian', $id_bagian)->orderBy('no_urut', 'asc')->get();
             $jumlah=$get_master_file->count();
@@ -287,6 +287,7 @@ use Illuminate\Validation\ValidationException;
                     $data[$x]['edoc']=$edoc['edoc'];
                     $data[$x]['periode']=$list_file['periode'];
                     $data[$x]['periode_id']=$list_file['id_periode'];
+                    $data[$x]['is_perbaikan'] = $list_file['is_perbaikan'];
                     $x++;
                 }
             }
@@ -299,7 +300,7 @@ use Illuminate\Validation\ValidationException;
         public function getCatatanPerbaikan($current_year, $indikator_lvl){
             $data = [];
             $get_data = Perbaikan_checklist::join('periode_perbaikan as pp', 'pp.id', '=', 'perbaikan_checklist.periode_perbaikan_id')
-                                    ->select("perbaikan_checklist.catatan", "pp.periode")
+                                    ->select("perbaikan_checklist.catatan", "pp.periode", "perbaikan_checklist.id as id_perbaikan", "perbaikan_checklist.indikator_lvl_id")
                                     ->where("pp.tahun", $current_year)
                                     ->where("perbaikan_checklist.indikator_lvl_id", $indikator_lvl)
                                     ->get();
@@ -307,7 +308,9 @@ use Illuminate\Validation\ValidationException;
             foreach($get_data as $list){
                 $data[] = [
                     'periode'=>$list['periode'],
-                    'catatan'=>$list['catatan']
+                    'catatan'=>$list['catatan'],
+                    'token'=>Crypt::encrypt($list['id_perbaikan'])."-".Crypt::encrypt($list['indikator_lvl_id'])
+
                 ];
             }
 
@@ -692,6 +695,41 @@ use Illuminate\Validation\ValidationException;
                 'status'=>$status,
                 'msg'=>$msg,
             ];
+        }
+
+        public function getEffectedBagian($parent_id, $level, $tahun){
+            $table = ["Ampuh_indikator", "Ampuh_sub_indikator_lvl1", "Ampuh_sub_indikator_lvl2", "Ampuh_sub_indikator_lvl3", "Ampuh_sub_indikator_lvl4", "Ampuh_sub_indikator_lvl5"];
+            $referer = ["indikator_user", "indikator_lvl1_user", "indikator_lvl2_user", "indikator_lvl3_user", "indikator_lvl4_user", "indikator_lvl5_user"];
+            $kolom_referer = ['', 'id_indikator_lvl1', 'id_indikator_lvl2', 'id_indikator_lvl3', 'id_indikator_lvl4', 'id_indikator_lvl5'];
+            
+            $get_data = app("App\\Models\\".$table[$level])::join($referer[$level], function($join) use($parent_id, $level, $referer, $table, $kolom_referer) {
+                                                        $join->on($referer[$level].".".$kolom_referer[$level], "=", strtolower($table[$level]).".id")
+                                                            ->where(strtolower($table[$level]).".id", $parent_id);
+                                                    })
+                                                    ->join("bagian", "bagian.id", "=", $referer[$level].".id_bagian")
+                                                    ->select("bagian.bagian", "bagian.id")
+                                                    ->where($referer[$level].".tahun", $tahun)
+                                                    ->get();
+            $bagian = [];
+            $id = [];
+            $jumlah = $get_data->count();
+            $data = [];
+            foreach($get_data as $list){
+                $data[] = [
+                    'bagian'=>$list['bagian'],
+                    'token'=>Crypt::encrypt($list['id']),
+                    'id'=>$list['id']*3001 //id bagian dikali 30
+                ];
+            }
+            return ['jumlah'=>$jumlah, 'data'=>$data];
+        }
+
+        public function getPerbaikanChecklistDetil($perbaikan_id, $indikator_lvl){
+            $get_data = Perbaikan_checklist::where("id", $perbaikan_id)
+                                            ->where("indikator_lvl_id", $indikator_lvl)
+                                            ->first();
+            return $get_data;
+            
         }
 
         public function generateChecklistByYear(){
