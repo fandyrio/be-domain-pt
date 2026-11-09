@@ -167,6 +167,9 @@
                     $idx_parent+=1;
                     $data_tree[$idx_parent]['parent']=$list_data['parent'];
                     $data_tree[$idx_parent]['id']=$list_data['id_parent'];
+                    $data_tree[$idx_parent]['is_perbaikan']=null;
+                    $data_tree[$idx_parent]['periode_perbaikan'] = null;
+                    $data_tree[$idx_parent]['is_perbaikan_active']=false;
                     $parent=&$data_tree[$idx_parent];
                     $idx_lvl1=$idx_lvl2=$idx_lvl3=$idx_lvl4=$idx_lvl5=-1;
                     // $data_tree[$idx_parent]['lvl1'][$idx_lvl1]['lvl2'][$idx_lvl2]=null;
@@ -177,9 +180,18 @@
                     $lvl1['nama']=$list_data['lvl1'];
                     $lvl1['id']=$list_data['id_lvl1'];
                     $lvl1['is_folder_bagian']=(int)$list_data['folder_bagian_lvl1'];
-                    $get_perbaikan = $this->getCatatanPerbaikan($current_year, $list_data['id_lvl1']);
+                    $get_perbaikan = $this->getCatatanPerbaikan($current_year, $list_data['id_lvl1'], $id_bagian);
                     
                     $lvl1['perbaikan'] = count($get_perbaikan) > 0 ? true : false;
+                    if(count($get_perbaikan) > 0){
+                        $data_tree[$idx_parent]['is_perbaikan']=true;
+                        $data_tree[$idx_parent]['periode_perbaikan']="";
+                        for($x=0;$x<count($get_perbaikan);$x++){
+                            if($get_perbaikan[$x]['periode_active'] === 1){
+                                $data_tree[$idx_parent]['is_perbaikan_active'] = true;
+                            }
+                        }
+                    }
                     $lvl1['catatan_perbaikan'] = $get_perbaikan;
                     
                     //generate file master
@@ -297,16 +309,18 @@
             ];
         }
 
-        public function getCatatanPerbaikan($current_year, $indikator_lvl){
+        public function getCatatanPerbaikan($current_year, $indikator_lvl, $id_bagian){
             $data = [];
             $get_data = Perbaikan_checklist::join('periode_perbaikan as pp', 'pp.id', '=', 'perbaikan_checklist.periode_perbaikan_id')
-                                    ->select("perbaikan_checklist.catatan", "pp.periode", "perbaikan_checklist.id as id_perbaikan", "perbaikan_checklist.indikator_lvl_id")
+                                    ->select("perbaikan_checklist.catatan", "pp.periode", "perbaikan_checklist.id as id_perbaikan", "perbaikan_checklist.indikator_lvl_id", "pp.active")
                                     ->where("pp.tahun", $current_year)
                                     ->where("perbaikan_checklist.indikator_lvl_id", $indikator_lvl)
+                                    ->whereRaw("id_bagian like '%".$id_bagian."%'")
                                     ->get();
 
             foreach($get_data as $list){
                 $data[] = [
+                    'periode_active'=>$list['active'],
                     'periode'=>$list['periode'],
                     'catatan'=>$list['catatan'],
                     'token'=>Crypt::encrypt($list['id_perbaikan'])."-".Crypt::encrypt($list['indikator_lvl_id'])

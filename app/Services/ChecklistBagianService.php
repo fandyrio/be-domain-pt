@@ -248,6 +248,52 @@ use Illuminate\Support\Facades\DB;
             return ['status'=>$status, 'msg'=>$msg];
         }
 
+        public function updateCatatanPerbaikan($perbaikan_id, $parent_id, $level, $catatan, $id_bagian, $tahun, $periode_perbaikan, $effected_bagian_arr){
+            $status = false;
+            $msg = "";
+            $table_indikator = ['Indikator_user', 'Indikator_lvl1_user', 'Indikator_lvl2_user', 'Indikator_lvl3_user', 'Indikator_lvl4_user', 'Indikator_lvl5_user'];
+            $table_master = ['ampuh_indikator', "ampuh_sub_indikator_lvl1", "ampuh_sub_indikator_lvl2", "ampuh_sub_indikator_lvl3", "ampuh_sub_indikator_lvl4", "ampuh_sub_indikator_lvl5"];
+            $kolom_ref = ["id_indikator", "id_indikator_lvl1", "id_indikator_lvl2", "id_indikator_lvl3", "id_indikator_lvl4"];
+            
+            $get_data = app("App\\Models\\".$table_indikator[$level])::join($table_master[$level]." as master", "master.id", "=", strtolower($table_indikator[$level]).".".$kolom_ref[$level])
+                                        ->where(strtolower($table_indikator[$level]).".id_bagian", $id_bagian)
+                                        ->where(strtolower($table_indikator[$level]).".tahun", $tahun)
+                                        ->where(strtolower($table_indikator[$level]).".".$kolom_ref[$level], $parent_id)
+                                        ->first();
+            $get_periode_perbaikan = Periode_perbaikan::where("id", $periode_perbaikan)
+                                        ->where("active", true)
+                                        ->first();
+            if(!is_null($get_data) && !is_null($get_periode_perbaikan)){
+                $perbaikan = Perbaikan_checklist::where("level", $level)
+                                ->where('periode_perbaikan_id', $periode_perbaikan)
+                                ->where('indikator_lvl_id', $parent_id)
+                                ->where("id", $perbaikan_id)
+                                ->first();
+                if(!is_null($perbaikan)){
+                    $perbaikan->level = $level;
+                    $perbaikan->periode_perbaikan_id = $periode_perbaikan;
+                    $perbaikan->indikator_lvl_id = $parent_id;
+                    $perbaikan->catatan = $catatan;
+                    $perbaikan->id_bagian = json_encode($effected_bagian_arr);
+                    $perbaikan->updated_at = date(now());
+                    $status = $perbaikan->update();
+                    // $status = true;
+                    if($status){
+                        $msg = "Berhasil mengubah data";
+                    }else{
+                        $msg = "Terjadi kesalahan sistem saat menyimpan data";
+                    }
+                }else{
+                    $msg = "Data Perbaikan tidak ditemukan / Sudah lewat ";
+                }
+                
+            }else{
+                $msg = "Data tidak ditemukan";
+            }
+
+            return ['status'=>$status, 'msg'=>$msg];
+        }
+
         public function getPeriodePerbaikanPerTahun($tahun){
             $data = [];
             $get_data = Periode_perbaikan::where("tahun", $tahun)->get();

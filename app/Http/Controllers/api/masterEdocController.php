@@ -128,9 +128,9 @@ class masterEdocController extends Controller
                 if(!is_null($get_data)){
                     $id_bagian_arr = $this->toArray($get_data->id_bagian);
                     $get_bagian = $this->bagianService->getBagianByIdBundle($id_bagian_arr); 
-                    if(count($get_bagian) === 0){
-                        $msg='Data tidak lengkap';
-                    }else{
+                    // if(count($get_bagian) === 0){
+                    //     $msg='Data tidak lengkap';
+                    // }else{
                         $data = [
                             "catatan"=>$get_data->catatan,
                             "periode_perbaikan"=>$get_data->periode_perbaikan_id,
@@ -138,7 +138,7 @@ class masterEdocController extends Controller
                         ];
                         $status = true;
                         $msg = "Data Found";
-                    }
+                    // }
                 }else{
                     $msg = "Data tidak ditemukan";
                 }

@@ -184,7 +184,7 @@ class homeController extends Controller
                     'id_lvl1'=>$list['id_lvl1'],
                     'nama_lvl1'=>$list['lvl1'],
                     'perbaikan'=>count($get_catatan) > 0 ? true : false,
-                    'catatan_perbaikan'=>$get_catatan
+                    'catatan_perbaikan'=>$get_catatan,
                 ];
                 
             }
@@ -253,10 +253,20 @@ class homeController extends Controller
         // return view('list', ['data'=>$data['data'], 'no'=>1]);
     }
 
+    public function toArray($str_arr){
+        $arr = [];
+        $replace = str_replace(array("[", "]"), "", $str_arr);
+        $explode = explode(",", $replace);
+        for($x=0;$x<count($explode);$x++){
+            array_push($arr, $explode[$x]);
+        }
+        return $arr;
+    }
+
      public function getCatatanPerbaikan($current_year, $indikator_lvl){
         $data = [];
         $get_data = Perbaikan_checklist::join('periode_perbaikan as pp', 'pp.id', '=', 'perbaikan_checklist.periode_perbaikan_id')
-                                ->select("perbaikan_checklist.catatan", "pp.periode")
+                                ->select("perbaikan_checklist.catatan", "pp.periode", 'perbaikan_checklist.id_bagian')
                                 ->where("pp.tahun", $current_year)
                                 ->where("perbaikan_checklist.indikator_lvl_id", $indikator_lvl)
                                 ->get();
@@ -264,7 +274,8 @@ class homeController extends Controller
         foreach($get_data as $list){
             $data[] = [
                 'periode'=>$list['periode'],
-                'catatan'=>$list['catatan']
+                'catatan'=>$list['catatan'],
+                'id_bagian'=>$this->toArray($list['id_bagian'])
             ];
         }
 
