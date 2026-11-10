@@ -19,6 +19,7 @@ use App\Models\Indikator_lvl4_user;
 use App\Models\Indikator_lvl5_user;
 use App\Models\Master_file_indikator;
 use App\Models\Perbaikan_checklist;
+use App\Models\Periode_perbaikan;
 use Illuminate\Support\Facades\DB;
 
 
@@ -155,7 +156,8 @@ class homeController extends Controller
         $id_lvl5_before=null;
         $x=0;
         $index=0;
-        
+        $blm_upload_perbaikan = 0;
+        $sudah_upload_perbaikan = 0;
         foreach($get_data as $list){
             $change_y=true;
             $change_z=true;
@@ -178,7 +180,7 @@ class homeController extends Controller
                     $change_z=false;
                 }
                 $z=0;$z1=0;
-                $get_catatan = $this->getCatatanPerbaikan($year, $list['id_lvl1']);
+                $get_catatan = $this->getCatatanPerbaikan($year, $list['id_lvl1'], $id_perbaikan);
                 
                 $data[$x]['lvl1'][]=[
                     'id_lvl1'=>$list['id_lvl1'],
@@ -197,13 +199,38 @@ class homeController extends Controller
                 $filename=null;
                 $id_indikator_lvl2=$list['id_indikator'];
                 if((int)$list['bagian_lvl2'] === 1 && !is_null($id_indikator_lvl2)){
-                    $get_edoc=$this->generateEdocFile($id_indikator_lvl2, 2);
-                    $data[$x]['lvl1'][$y]['lvl2'][]=[
-                        'id_lvl2'=>$list['id_lvl2'],
-                        'nama_lvl2'=>$list['lvl2'],
-                        'judul'=>true,
-                        'edoc'=>$get_edoc['edoc'],
-                    ];
+                    if(!is_null($id_perbaikan)){
+                        $jumlah_catatan = count($get_catatan);
+                        $selected_id_perbaikan = null;
+                        for($jc=0;$jc<$jumlah_catatan;$jc++){
+                            if((int)$get_catatan[$jc]['id_perbaikan'] === (int)$id_perbaikan){
+                                $selected_id_perbaikan=$jc;
+                            }
+                        }
+                        if(in_array($list['id_bagian'], $get_catatan[$selected_id_perbaikan]['id_bagian'])){
+                            $get_edoc=$this->generateEdocFile($id_indikator_lvl2, 2, $id_perbaikan);
+                            $blm_upload_perbaikan+=$get_edoc['blm_upload_perbaikan'];
+                            $sudah_upload_perbaikan+=$get_edoc['sudah_upload_perbaikan'];
+                            $data[$x]['lvl1'][$y]['lvl2'][]=[
+                                'id_lvl2'=>$list['id_lvl2'],
+                                'nama_lvl2'=>$list['lvl2'],
+                                'judul'=>true,
+                                'edoc'=>$get_edoc['edoc'],
+                                'id_bagian'=>$get_catatan,
+                                'this_id_bagian'=>$list['id_bagian']
+                            ];
+                         }
+                    }else{
+                        $get_edoc=$this->generateEdocFile($id_indikator_lvl2, 2);
+                        $data[$x]['lvl1'][$y]['lvl2'][]=[
+                            'id_lvl2'=>$list['id_lvl2'],
+                            'nama_lvl2'=>$list['lvl2'],
+                            'judul'=>true,
+                            'edoc'=>$get_edoc['edoc'],
+                            'id_bagian'=>$get_catatan,
+                            'this_id_bagian'=>$list['id_bagian']
+                        ];
+                    }
                 }else{
                     $data[$x]['lvl1'][$y]['lvl2'][]=[
                         'id_lvl2'=>$list['id_lvl2'],
@@ -243,7 +270,10 @@ class homeController extends Controller
         }
         //return response()->json(['data'=>$get_data]);
         return [
-            'data'=>$data
+            'data'=>$data,
+            'blm_upload_perbaikan'=>$blm_upload_perbaikan,
+            'sudah_upload_perbaikan'=>$sudah_upload_perbaikan,
+            'is_perbaikan'=>is_null($id_perbaikan) ? false : true
         ];
     }
 
@@ -263,16 +293,27 @@ class homeController extends Controller
         return $arr;
     }
 
-     public function getCatatanPerbaikan($current_year, $indikator_lvl){
+     public function getCatatanPerbaikan($current_year, $indikator_lvl, $id_perbaikan){
         $data = [];
-        $get_data = Perbaikan_checklist::join('periode_perbaikan as pp', 'pp.id', '=', 'perbaikan_checklist.periode_perbaikan_id')
-                                ->select("perbaikan_checklist.catatan", "pp.periode", 'perbaikan_checklist.id_bagian')
+        if(!is_null($id_perbaikan)){
+            $get_data = Perbaikan_checklist::join('periode_perbaikan as pp', 'pp.id', '=', 'perbaikan_checklist.periode_perbaikan_id')
+                                ->select("perbaikan_checklist.catatan", "pp.periode", 'perbaikan_checklist.id_bagian', 'pp.id as id_perbaikan')
+                                ->where("pp.tahun", $current_year)
+                                ->where("perbaikan_checklist.indikator_lvl_id", $indikator_lvl)
+                                ->where('pp.id', $id_perbaikan)
+                                ->get();
+        }else{
+            $get_data = Perbaikan_checklist::join('periode_perbaikan as pp', 'pp.id', '=', 'perbaikan_checklist.periode_perbaikan_id')
+                                ->select("perbaikan_checklist.catatan", "pp.periode", 'perbaikan_checklist.id_bagian', 'pp.id as id_perbaikan')
                                 ->where("pp.tahun", $current_year)
                                 ->where("perbaikan_checklist.indikator_lvl_id", $indikator_lvl)
                                 ->get();
+        }
+        
 
         foreach($get_data as $list){
             $data[] = [
+                'id_perbaikan'=>$list['id_perbaikan'],
                 'periode'=>$list['periode'],
                 'catatan'=>$list['catatan'],
                 'id_bagian'=>$this->toArray($list['id_bagian'])
@@ -282,20 +323,40 @@ class homeController extends Controller
         return $data;
     }
 
-    public function generateEdocFile($id_indikator, $level){
+    public function generateEdocFile($id_indikator, $level, $id_perbaikan = null){
+        $blm_upload_perbaikan = 0;
+        $sudah_upload_perbaikan = 0;
         $edoc=null;
         $is_perbaikan = false;
         $filename=null;
         $string_lvl=['A', 'B', 'C', 'D', 'E', 'F'];
-        $get_data_indikator=Master_file_indikator::where('file_code', $string_lvl[$level-1].'-'.$id_indikator)->get();
+        $perlu_dok_perbaikan = false;
+        if(is_null($id_perbaikan)){
+            $get_data_indikator=Master_file_indikator::where('file_code', $string_lvl[$level-1].'-'.$id_indikator)->get();
+        }else{
+            $perlu_dok_perbaikan = true;
+            $get_data_indikator=Master_file_indikator::where(function($w) use($string_lvl, $level, $id_indikator){
+                                                            $w->where('file_code', $string_lvl[$level-1].'-'.$id_indikator)
+                                                                ->whereNull('periode_perbaikan_id');
+                                                        })
+                                            ->orWhere(function($w) use($string_lvl, $id_perbaikan, $id_indikator, $level){
+                                                 $w->where('file_code', $string_lvl[$level-1].'-'.$id_indikator)
+                                                                ->where('periode_perbaikan_id', $id_perbaikan);
+                                            })->get();
+        }
         $jumlah=$get_data_indikator->count();
         if($jumlah > 0){
             $x=0;
+            $sudah_ada_perbaikan = false;
             foreach($get_data_indikator as $file_indikator){
                 $filename=$file_indikator['file_name'];
                 $is_perbaikan = $file_indikator['is_perbaikan'];
                 $edoc[$x]['filename']=$filename;
+                $edoc[$x]['link_gd_id'] = $file_indikator['gd_id'];
                 $edoc[$x]['is_perbaikan'] = $is_perbaikan;
+                if($perlu_dok_perbaikan && $is_perbaikan){
+                    $sudah_ada_perbaikan = true;
+                }
                 $get_edoc=Edoc_indikator::where('id_master', $file_indikator['id'])
                             ->where('max_fill_at', '<', date(now()))
                             ->get();
@@ -303,6 +364,11 @@ class homeController extends Controller
                 if($jumlah_edoc > 0){
                     $edoc_index=0;
                     foreach($get_edoc as $list_edoc){
+                        if($is_perbaikan && $perlu_dok_perbaikan && is_null($list_edoc['edoc'])){
+                            $blm_upload_perbaikan+=1;
+                        }else if($is_perbaikan && $perlu_dok_perbaikan && !is_null($list_edoc['edoc'])){
+                            $sudah_upload_perbaikan+=1;
+                        }
                         $edoc[$x]['file'][$edoc_index]['edoc']=$list_edoc['edoc'];
                         $edoc[$x]['file'][$edoc_index]['timeline']=$list_edoc['timeline'];
                         $edoc[$x]['file'][$edoc_index]['max_fill_at']=$list_edoc['max_fill_at'];
@@ -312,11 +378,19 @@ class homeController extends Controller
                 $x++;
             }
             
+            if($sudah_ada_perbaikan === false && $perlu_dok_perbaikan){
+                $get_periode_perbaikan = Periode_perbaikan::where("id", $id_perbaikan)->first();
+                $edoc[$x]['filename'] = "Perbaikan ".$get_periode_perbaikan->periode;
+                $edoc[$x]['is_perbaikan'] = true;
+                $blm_upload_perbaikan += 1;
+            }
         }
 
         return [
             'edoc' => $edoc,
-            'filename' => $filename
+            'filename' => $filename,
+            'blm_upload_perbaikan'=>$blm_upload_perbaikan,
+            'sudah_upload_perbaikan'=>$sudah_upload_perbaikan
         ];
     }
 }
